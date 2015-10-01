@@ -12,7 +12,10 @@
          handle_cast/2,
          handle_info/2,
          terminate/2,
-         code_change/3]).
+         code_change/3,
+         get_prefix/0,
+         set_prefix/1
+        ]).
 
 -record(state, {timer, prefix, graphite, socket, filtermapper}).
 
@@ -22,6 +25,12 @@
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+
+get_prefix() ->
+    gen_server:call(?MODULE, get_timer_prefix).
+
+set_prefix(Prefix) ->
+    gen_server:call(?MODULE, {set_timer_prefix, Prefix}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -49,8 +58,13 @@ init([]) ->
 
 
 handle_call(get_timer, _From, State) ->
-    {reply, {ok, State#state.timer}, State}.
+    {reply, {ok, State#state.timer}, State};
 
+handle_call(get_prefix, _From, State) ->
+    {reply, {ok, State#state.prefix}, State};
+
+handle_call({set_prefix, Prefix}, _From, State) ->
+    {reply, ok, State#state{prefix=Prefix}}.
 
 handle_cast(_Msg, State) ->
     {noreply, State}.
