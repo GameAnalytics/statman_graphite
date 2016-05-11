@@ -4,7 +4,8 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0]).
+-export([start_link/0,
+         reload_prefix/1]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -23,6 +24,8 @@
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
+reload_prefix(Prefix)->
+    gen_server:call(?MODULE, {set_prefix, Prefix}).
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================
@@ -49,8 +52,10 @@ init([]) ->
 
 
 handle_call(get_timer, _From, State) ->
-    {reply, {ok, State#state.timer}, State}.
+    {reply, {ok, State#state.timer}, State};
 
+handle_call({set_prefix, Prefix}, _From, State) ->
+    {reply, ok, State#state{prefix = Prefix}}.
 
 handle_cast(_Msg, State) ->
     {noreply, State}.
