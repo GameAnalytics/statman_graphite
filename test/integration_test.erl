@@ -91,20 +91,22 @@ prefix(Socket) ->
     {ok, Timer} = gen_server:call(statman_graphite_pusher, get_timer),
     pusher_pid() ! {timeout, Timer, {push, 60000}},
 
+    ok = gen_server:call(statman_graphite_pusher,{reload_prefix, <<"newprefix">>),
+
     Lines = recv_lines(Socket),
     ?assertEqual(1 + 1 + 9 + 1, length(Lines)),
 
-    ?assertElementMatch(<<"myprefix.test.counter 42", _/binary>>, Lines),
-    ?assertElementMatch(<<"myprefix.test.gauge 4711", _/binary>>, Lines),
-    ?assertElementMatch(<<"myprefix.test.histogram.min 7", _/binary>>, Lines),
-    ?assertElementMatch(<<"myprefix.test.histogram.p25 7", _/binary>>, Lines),
-    ?assertElementMatch(<<"myprefix.test.histogram.mean 7", _/binary>>, Lines),
-    ?assertElementMatch(<<"myprefix.test.histogram.median 7", _/binary>>, Lines),
-    ?assertElementMatch(<<"myprefix.test.histogram.p75 7", _/binary>>, Lines),
-    ?assertElementMatch(<<"myprefix.test.histogram.p95 7", _/binary>>, Lines),
-    ?assertElementMatch(<<"myprefix.test.histogram.p99 7", _/binary>>, Lines),
-    ?assertElementMatch(<<"myprefix.test.histogram.p999 7", _/binary>>, Lines),
-    ?assertElementMatch(<<"myprefix.test.histogram.max 7", _/binary>>, Lines),
+    ?assertElementMatch(<<"newprefix.test.counter 42", _/binary>>, Lines),
+    ?assertElementMatch(<<"newprefix.test.gauge 4711", _/binary>>, Lines),
+    ?assertElementMatch(<<"newprefix.test.histogram.min 7", _/binary>>, Lines),
+    ?assertElementMatch(<<"newprefix.test.histogram.p25 7", _/binary>>, Lines),
+    ?assertElementMatch(<<"newprefix.test.histogram.mean 7", _/binary>>, Lines),
+    ?assertElementMatch(<<"newprefix.test.histogram.median 7", _/binary>>, Lines),
+    ?assertElementMatch(<<"newprefix.test.histogram.p75 7", _/binary>>, Lines),
+    ?assertElementMatch(<<"newprefix.test.histogram.p95 7", _/binary>>, Lines),
+    ?assertElementMatch(<<"newprefix.test.histogram.p99 7", _/binary>>, Lines),
+    ?assertElementMatch(<<"newprefix.test.histogram.p999 7", _/binary>>, Lines),
+    ?assertElementMatch(<<"newprefix.test.histogram.max 7", _/binary>>, Lines),
     ok.
 
 whitelist(Socket) ->
