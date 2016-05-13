@@ -21,6 +21,9 @@ integration_test_() ->
       {[{host, "localhost"}, {port, ?PORT}, {prefix, <<"myprefix">>}],
        ?_testx(prefix)},
 
+      {[{host, "localhost"}, {port, ?PORT}, {prefix, <<"oldprefix">>}],
+       ?_testx(reload_prefix)},
+
       {[{host, "localhost"}, {port, ?PORT}, {whitelist, [{foo, bar}, baz]}],
        ?_testx(whitelist)},
 
@@ -91,7 +94,34 @@ prefix(Socket) ->
     {ok, Timer} = gen_server:call(statman_graphite_pusher, get_timer),
     pusher_pid() ! {timeout, Timer, {push, 60000}},
 
-    ok = gen_server:call(statman_graphite_pusher,{reload_prefix, <<"newprefix">>),
+    Lines = recv_lines(Socket),
+    ?assertEqual(1 + 1 + 9 + 1, length(Lines)),
+
+    ?assertElementMatch(<<"myprefix.test.counter 42", _/binary>>, Lines),
+    ?assertElementMatch(<<"myprefix.test.gauge 4711", _/binary>>, Lines),
+    ?assertElementMatch(<<"myprefix.test.histogram.min 7", _/binary>>, Lines),
+    ?assertElementMatch(<<"myprefix.test.histogram.p25 7", _/binary>>, Lines),
+    ?assertElementMatch(<<"myprefix.test.histogram.mean 7", _/binary>>, Lines),
+    ?assertElementMatch(<<"myprefix.test.histogram.median 7", _/binary>>, Lines),
+    ?assertElementMatch(<<"myprefix.test.histogram.p75 7", _/binary>>, Lines),
+    ?assertElementMatch(<<"myprefix.test.histogram.p95 7", _/binary>>, Lines),
+    ?assertElementMatch(<<"myprefix.test.histogram.p99 7", _/binary>>, Lines),
+    ?assertElementMatch(<<"myprefix.test.histogram.p999 7", _/binary>>, Lines),
+    ?assertElementMatch(<<"myprefix.test.histogram.max 7", _/binary>>, Lines),
+    ok.
+
+reload_prefix(Socket) ->
+    statman_counter:incr({test, counter}, 42),
+    statman_gauge:set({test, gauge}, 4711),
+    statman_histogram:record_value({test, histogram}, 7),
+
+    statman_server:report(),
+    timer:sleep(500),
+
+    {ok, Timer} = gen_server:call(statman_graphite_pusher, get_timer),
+    pusher_pid() ! {timeout, Timer, {push, 60000}},
+
+    ok = gen_server:call(statman_graphite_pusher,{reload_prefix, <<"newprefix">>}),
 
     Lines = recv_lines(Socket),
     ?assertEqual(1 + 1 + 9 + 1, length(Lines)),
@@ -108,6 +138,7 @@ prefix(Socket) ->
     ?assertElementMatch(<<"newprefix.test.histogram.p999 7", _/binary>>, Lines),
     ?assertElementMatch(<<"newprefix.test.histogram.max 7", _/binary>>, Lines),
     ok.
+
 
 whitelist(Socket) ->
     statman_gauge:set({foo, bar}, 4711),
