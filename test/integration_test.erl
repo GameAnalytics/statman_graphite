@@ -29,6 +29,7 @@ integration_test_() ->
 
       {[{host, "localhost"}, {port, ?PORT}, {filtermapper, fun fm/1}],
        ?_testx(filtermapper)},
+
       {[{host, "localhost"}, {port, ?PORT}, {filtermapper, {?MODULE, fm}}],
        ?_testx(filtermapper)}
      ]}.
@@ -118,10 +119,10 @@ reload_prefix(Socket) ->
     statman_server:report(),
     timer:sleep(500),
 
+    ok = gen_server:call(statman_graphite_pusher,{reload_prefix, <<"newprefix">>}),
+
     {ok, Timer} = gen_server:call(statman_graphite_pusher, get_timer),
     pusher_pid() ! {timeout, Timer, {push, 60000}},
-
-    ok = gen_server:call(statman_graphite_pusher,{reload_prefix, <<"newprefix">>}),
 
     Lines = recv_lines(Socket),
     ?assertEqual(1 + 1 + 9 + 1, length(Lines)),
