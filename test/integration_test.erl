@@ -21,11 +21,15 @@ integration_test_() ->
       {[{host, "localhost"}, {port, ?PORT}, {prefix, <<"myprefix">>}],
        ?_testx(prefix)},
 
+      {[{host, "localhost"}, {port, ?PORT}, {prefix, <<"oldprefix">>}],
+       ?_testx(reload_prefix)},
+
       {[{host, "localhost"}, {port, ?PORT}, {whitelist, [{foo, bar}, baz]}],
        ?_testx(whitelist)},
 
       {[{host, "localhost"}, {port, ?PORT}, {filtermapper, fun fm/1}],
        ?_testx(filtermapper)},
+
       {[{host, "localhost"}, {port, ?PORT}, {filtermapper, {?MODULE, fm}}],
        ?_testx(filtermapper)}
      ]}.
@@ -107,6 +111,12 @@ prefix(Socket) ->
     ?assertElementMatch(<<"myprefix.test.histogram.max 7", _/binary>>, Lines),
     ok.
 
+reload_prefix(Socket) ->
+    ?assertElementMatch(<<"oldprefix", _/binary>>, perform_roundtrip(Socket)),
+    ok = gen_server:call(statman_graphite_pusher, {reload_prefix, <<"newprefix">>}),
+    ?assertElementMatch(<<"newprefix", _/binary>>, perform_roundtrip(Socket)),
+    ok.
+
 whitelist(Socket) ->
     statman_gauge:set({foo, bar}, 4711),
     statman_gauge:set(baz, 42),
@@ -172,3 +182,14 @@ pusher_pid() ->
     ?assert(is_pid(Pid)),
     ?assert(erlang:is_process_alive(Pid)),
     Pid.
+
+perform_roundtrip(Socket) ->
+    statman_counter:incr(integration_test_ignored_key, 0),
+    statman_server:report(),
+    timer:sleep(500),
+    {ok, Timer} = gen_server:call(statman_graphite_pusher, get_timer),
+    pusher_pid() ! {timeout, Timer, {push, 60000}},
+    Lines = recv_lines(Socket),
+    ?assertEqual(1 + 1, length(Lines)),
+    Lines.
+
