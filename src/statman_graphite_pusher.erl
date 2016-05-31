@@ -5,7 +5,8 @@
 
 %% API
 -export([start_link/0,
-         reload_prefix/1]).
+         reload_prefix/1,
+         get_prefix/0]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -26,6 +27,9 @@ start_link() ->
 
 reload_prefix(Prefix) ->
     gen_server:call(?MODULE, {reload_prefix, Prefix}).
+
+get_prefix() ->
+    gen_server:call(?MODULE, get_prefix).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -56,7 +60,10 @@ handle_call(get_timer, _From, State) ->
     {reply, {ok, State#state.timer}, State};
 
 handle_call({reload_prefix, Prefix}, _From, State) when is_binary(Prefix) ->
-    {reply, ok, State#state{prefix = Prefix}}.
+    {reply, ok, State#state{prefix = Prefix}};
+
+handle_call(get_prefix, _From, #state{prefix = Prefix} = State) ->
+    {reply, {ok, Prefix}, State}.
 
 handle_cast(_Msg, State) ->
     {noreply, State}.
